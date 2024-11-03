@@ -1,9 +1,19 @@
 from bot.session_manager import Session
 from common.log import logger
+from common import const
+
+"""
+    e.g.  [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Who won the world series in 2020?"},
+        {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+        {"role": "user", "content": "Where was it played?"}
+    ]
+"""
 
 
 class DeepSeekSession(Session):
-    def __init__(self, session_id, system_prompt=None, model="deepseek-chat"):
+    def __init__(self, session_id, system_prompt=None, model="gpt-3.5-turbo"):
         super().__init__(session_id, system_prompt)
         self.model = model
         self.reset()
@@ -38,25 +48,25 @@ class DeepSeekSession(Session):
                 raise e
             logger.debug("Exception when counting tokens precisely for query: {}".format(e))
         while cur_tokens > max_tokens:
-            if len(self.messages) > 1:
-                self.messages.pop(0)
-            elif len(self.messages) == 1 and self.messages[0]["role"] == "assistant":
-                self.messages.pop(0)
+            if len(self.messages) > 2:
+                self.messages.pop(1)
+            elif len(self.messages) == 2 and self.messages[1]["role"] == "assistant":
+                self.messages.pop(1)
                 if precise:
                     cur_tokens = self.calc_tokens()
                 else:
-                    cur_tokens = len(str(self))
+                    cur_tokens = cur_tokens - max_tokens
                 break
-            elif len(self.messages) == 1 and self.messages[0]["role"] == "user":
-                logger.warn("user question exceed max_tokens. total_tokens={}".format(cur_tokens))
+            elif len(self.messages) == 2 and self.messages[1]["role"] == "user":
+                logger.warn("user message exceed max_tokens. total_tokens={}".format(cur_tokens))
                 break
             else:
-                logger.debug("max_tokens={}, total_tokens={}, len(conversation)={}".format(max_tokens, cur_tokens, len(self.messages)))
+                logger.debug("max_tokens={}, total_tokens={}, len(messages)={}".format(max_tokens, cur_tokens, len(self.messages)))
                 break
             if precise:
                 cur_tokens = self.calc_tokens()
             else:
-                cur_tokens = len(str(self))
+                cur_tokens = cur_tokens - max_tokens
         return cur_tokens
 
     def calc_tokens(self):

@@ -67,6 +67,11 @@ def create_bot(bot_type):
     elif bot_type == const.MiniMax:
         from bot.minimax.minimax_bot import MinimaxBot
         return MinimaxBot()
+    
+    elif bot_type == const.DEEPSEEK:
+        # ChatGPT 网页端web接口
+        from bot.deepseek.deepseek_bot import DeepSeekBot
+        return DeepSeekBot()
 
 
     raise RuntimeError
